@@ -59,7 +59,7 @@ class Dropbox extends AbstractProvider
      */
     protected function getDefaultScopes()
     {
-        return [];
+        return ['scope' => 'account_info.read files.metadata.read'];
     }
 
     /**
@@ -120,5 +120,21 @@ class Dropbox extends AbstractProvider
         return parent::getAuthorizationUrl(array_merge([
             'approval_prompt' => []
         ], $options));
+    }
+
+    /**
+     * Returns a prepared request for requesting an access token.
+     *
+     * @param array $params Query string parameters
+     * @return RequestInterface
+     */
+    protected function getAccessTokenRequest(array $params)
+    {
+        // Dropbox doesn't like the redirect_uri in refresh_token requests
+        if (isset($params['refresh_token'])) {
+            unset($params['redirect_uri']);
+        }
+
+        return parent::getAccessTokenRequest($params);
     }
 }

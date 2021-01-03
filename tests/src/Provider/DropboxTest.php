@@ -45,7 +45,7 @@ class DropboxTest extends \PHPUnit_Framework_TestCase
 
     public function testScopes()
     {
-        $scopeSeparator = ',';
+        $scopeSeparator = ' ';
         $options = ['scope' => [uniqid(), uniqid()]];
         $query = ['scope' => implode($scopeSeparator, $options['scope'])];
         $url = $this->provider->getAuthorizationUrl($options);
@@ -82,6 +82,24 @@ class DropboxTest extends \PHPUnit_Framework_TestCase
         $this->provider->setHttpClient($client);
 
         $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+
+        $this->assertEquals('mock_access_token', $token->getToken());
+        $this->assertNull($token->getExpires());
+        $this->assertNull($token->getRefreshToken());
+        $this->assertEquals('12345', $token->getResourceOwnerId());
+    }
+
+    public function testGetRefreshToken()
+    {
+        $response = m::mock('Psr\Http\Message\ResponseInterface');
+        $response->shouldReceive('getBody')->andReturn('{"access_token": "mock_access_token", "token_type": "bearer", "account_id": "12345", "uid": "deprecated_id"}');
+        $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+
+        $client = m::mock('GuzzleHttp\ClientInterface');
+        $client->shouldReceive('send')->times(1)->andReturn($response);
+        $this->provider->setHttpClient($client);
+
+        $token = $this->provider->getAccessToken('refresh_token', ['refresh_token' => 'mock_refresh_token']);
 
         $this->assertEquals('mock_access_token', $token->getToken());
         $this->assertNull($token->getExpires());
